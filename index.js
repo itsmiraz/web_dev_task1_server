@@ -35,14 +35,14 @@ async function run() {
             const result = await catagoryCollections.find(query).toArray()
             res.send(result)
         })
-       
+
         // Add Expense
         app.put('/addexpense/:id', async (req, res) => {
             const id = req.params.id;
             const body = req.body
             const filter = { _id: new ObjectId(id) }
             console.log(body)
-           const expenseCatagory = await catagoryCollections.findOne(filter)
+            const expenseCatagory = await catagoryCollections.findOne(filter)
             const option = { upsert: true }
             const updateDoc = {
                 $set: {
@@ -58,9 +58,37 @@ async function run() {
 
 
         // Remove Expense
-        app.put('/removeexpense/:id?expenseId', async (req, res) => {
+        app.put('/removeexpense/:id', async (req, res) => {
             const id = req.params.id
-            const expenseId = req.params.expenseId
+            const expenseId = req.body.expenseID
+            console.log(id, req.body, expenseId)
+            const query = { _id: new ObjectId(id) }
+            const option = {upsert:true}
+            const clickedCatagory = await catagoryCollections.findOne(query)
+            console.log(clickedCatagory)
+
+            let newExpense;
+
+            const upd_obj = clickedCatagory.expenses.map((obj, i) => {
+
+                if (i == expenseId) {
+                    obj.remove = true;
+                    newExpense = clickedCatagory.expense - obj.expense
+                }
+                return obj;
+            })
+            const updateDoc = {
+                $set: {
+                    expenses: upd_obj,
+                    expense:newExpense
+                }
+            }
+            console.log(upd_obj);
+            const result = await catagoryCollections.updateOne(query,updateDoc,option)
+            res.send(result)
+
+
+
         })
 
     }
