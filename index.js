@@ -17,7 +17,51 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 
 async function run() {
     try {
-      
+        const catagoryCollections = client.db('ExpenseTracker').collection('catagory')
+
+
+
+
+        // Adding Catagories
+        app.post('/addcatagory', async (req, res) => {
+            const body = req.body;
+            const result = await catagoryCollections.insertOne(body)
+            res.send(result)
+        })
+
+        // Reading the catagory Data
+        app.get('/catagories', async (req, res) => {
+            const query = {}
+            const result = await catagoryCollections.find(query).toArray()
+            res.send(result)
+        })
+       
+        // Add Expense
+        app.put('/addexpense/:id', async (req, res) => {
+            const id = req.params.id;
+            const body = req.body
+            const filter = { _id: new ObjectId(id) }
+            console.log(body)
+           const expenseCatagory = await catagoryCollections.findOne(filter)
+            const option = { upsert: true }
+            const updateDoc = {
+                $set: {
+                    expenses: [...expenseCatagory.expenses, body],
+                    expense: body.newexpense
+                }
+            }
+            const result = await catagoryCollections.updateOne(filter, updateDoc, option)
+            res.send(result)
+
+
+        })
+
+
+        // Remove Expense
+        app.put('/removeexpense/:id?expenseId', async (req, res) => {
+            const id = req.params.id
+            const expenseId = req.params.expenseId
+        })
 
     }
     catch {
