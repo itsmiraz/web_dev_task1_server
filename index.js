@@ -18,9 +18,45 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function run() {
     try {
         const catagoryCollections = client.db('ExpenseTracker').collection('catagory')
+        const usersCollection = client.db('ExpenseTracker').collection('users')
 
 
+        app.put("/user/:email", async (req, res) => {
+            try {
+                const email = req.params.email;
 
+                // check the req
+                const query = { email: email }
+                const existingUser = await usersCollection.findOne(query)
+
+                if (existingUser) {
+                   
+                  
+                    return res.send({ })
+                }
+
+                else {
+
+                    const user = req.body;
+                    const filter = { email: email };
+                    const options = { upsert: true };
+                    const updateDoc = {
+                        $set: user
+                    }
+                    const result = await usersCollection.updateOne(filter, updateDoc, options);
+
+                    // token generate 
+                    
+                  
+                    return res.send(result)
+
+                }
+
+            }
+            catch (err) {
+                console.log(err)
+            }
+        })
 
         // Adding Catagories
         app.post('/addcatagory', async (req, res) => {
@@ -29,9 +65,12 @@ async function run() {
             res.send(result)
         })
 
+        // Catagories by user
+    
         // Reading the catagory Data
         app.get('/catagories', async (req, res) => {
-            const query = {}
+            const email = req.query.email
+            const query = {userEmail:email}
             const result = await catagoryCollections.find(query).toArray()
             res.send(result)
         })
@@ -61,15 +100,13 @@ async function run() {
         app.put('/removeexpense/:id', async (req, res) => {
             const id = req.params.id
             const expenseId = req.body.expenseID
-            console.log(id, req.body, expenseId)
             const query = { _id: new ObjectId(id) }
             const option = {upsert:true}
             const clickedCatagory = await catagoryCollections.findOne(query)
-            console.log(clickedCatagory)
 
             let newExpense;
 
-            const upd_obj = clickedCatagory.expenses.map((obj, i) => {
+            const updatedObject = clickedCatagory.expenses.map((obj, i) => {
 
                 if (i == expenseId) {
                     obj.remove = true;
@@ -79,11 +116,10 @@ async function run() {
             })
             const updateDoc = {
                 $set: {
-                    expenses: upd_obj,
+                    expenses: updatedObject,
                     expense:newExpense
                 }
             }
-            console.log(upd_obj);
             const result = await catagoryCollections.updateOne(query,updateDoc,option)
             res.send(result)
 
