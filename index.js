@@ -21,6 +21,14 @@ async function run() {
         const usersCollection = client.db('ExpenseTracker').collection('users')
 
 
+        // app.get("/delete", async (req, res) => {
+
+        //     const query = {}
+        //     const result = await catagoryCollections.deleteMany(query)
+        //     res.send(result)
+
+        // })
+
         app.put("/user/:email", async (req, res) => {
             try {
                 const email = req.params.email;
@@ -30,9 +38,9 @@ async function run() {
                 const existingUser = await usersCollection.findOne(query)
 
                 if (existingUser) {
-                   
-                  
-                    return res.send({ })
+
+
+                    return res.send({})
                 }
 
                 else {
@@ -46,8 +54,8 @@ async function run() {
                     const result = await usersCollection.updateOne(filter, updateDoc, options);
 
                     // token generate 
-                    
-                  
+
+
                     return res.send(result)
 
                 }
@@ -66,11 +74,11 @@ async function run() {
         })
 
         // Catagories by user
-    
+
         // Reading the catagory Data
         app.get('/catagories', async (req, res) => {
             const email = req.query.email
-            const query = {userEmail:email}
+            const query = { userEmail: email }
             const result = await catagoryCollections.find(query).toArray()
             res.send(result)
         })
@@ -96,31 +104,83 @@ async function run() {
         })
 
 
+        // delete catagory 
+        app.delete('/deletecatagory/:id', async (req, res) => {
+
+            const id = req.params.id
+
+            const query = { _id: new ObjectId(id) }
+            const result = await catagoryCollections.deleteOne(query)
+            res.send(result)
+
+        })
+
+        app.put('/editexpense/:id', async (req, res) => {
+            const id = req.params.id
+            const body = req.body
+            const expenseId = req.body.expenseID
+            const query = { _id: new ObjectId(id) }
+            const option = { upsert: true }
+            const clickedCatagory = await catagoryCollections.findOne(query)
+
+            console.log('id',expenseId)
+            console.log('body',body)
+          
+            const updatedObject = clickedCatagory.expenses.map((obj, i) => {
+
+                if (obj.id=== expenseId) {
+
+                    obj.remove = false
+                    obj.expense = body.newExpenseBudget
+                    obj.title = body.newExpenseTitle
+                 
+                }
+                return obj;
+            })
+
+
+
+            const updateDoc = {
+                $set: {
+                    expenses: updatedObject,
+                   
+                }
+            }
+            const result = await catagoryCollections.updateOne(query, updateDoc, option)
+            res.send(result)
+
+
+        })
+
         // Remove Expense
         app.put('/removeexpense/:id', async (req, res) => {
             const id = req.params.id
             const expenseId = req.body.expenseID
+            const body =req.body
+            console.log(body)
             const query = { _id: new ObjectId(id) }
-            const option = {upsert:true}
+            const option = { upsert: true }
             const clickedCatagory = await catagoryCollections.findOne(query)
 
-            let newExpense;
-
+          
             const updatedObject = clickedCatagory.expenses.map((obj, i) => {
 
-                if (i == expenseId) {
-                    obj.remove = true;
-                    newExpense = clickedCatagory.expense - obj.expense
+                if (obj.id === expenseId) {
+                    obj.remove = 'true';
+
                 }
                 return obj;
             })
+
+         
+
             const updateDoc = {
                 $set: {
                     expenses: updatedObject,
-                    expense:newExpense
+
                 }
             }
-            const result = await catagoryCollections.updateOne(query,updateDoc,option)
+            const result = await catagoryCollections.updateOne(query, updateDoc, option)
             res.send(result)
 
 
